@@ -49,24 +49,26 @@ if __name__ == "__main__":
 
     action = "assigning best segmentation class"
     start_time = segutils.start_action(action)
-    best_seg_cls = segml.assign_best_seg(train_dataset, SEG_ALGS)
+    best_segs = segml.assign_best_seg(train_dataset, SEG_ALGS)
     segutils.complete_action(action, start_time)
 
 
-    n_imgs_to_plot = 3
-    mean_seg_ious = np.zeros(len(SEG_ALGS))
-    for i in xrange(len(train_dataset)):
-        sample = train_dataset[i]
-        img_id = sample.get('id')
-        img = sample.get('img')
-        mask = sample.get('labelled_mask')
-        seg_ious = best_seg_cls.get(img_id)
-        my_best_seg_cls = np.argmax(seg_ious)
-        mean_seg_ious = mean_seg_ious + seg_ious
+    n_imgs_to_plot = 5
+    i = 0
+    n_seg_candidates = len(SEG_ALGS)
+    sum_seg_ious = np.zeros(n_seg_candidates)
+    n_seg_chosen = np.zeros(n_seg_candidates)
+    for img_id, best_seg in best_segs.items():
+        cls = best_seg.get('cls')
+        iou = best_seg.get('iou')
+        sum_seg_ious[cls] = sum_seg_ious[cls] + iou
+        n_seg_chosen[cls] = n_seg_chosen[cls] + 1
 
         if visualize and i < n_imgs_to_plot:
-
-            predicted_mask = SEG_ALGS.get(my_best_seg_cls)(img)
+            sample = train_dataset[i]
+            img = sample.get('img')
+            mask = sample.get('labelled_mask')
+            predicted_mask = SEG_ALGS.get(cls)(img)
             plt.subplot(131)
             plt.title("Image")
             plt.imshow(img)
@@ -76,19 +78,17 @@ if __name__ == "__main__":
             plt.imshow(mask)
 
             plt.subplot(133)
-            best_iou = max(seg_ious)
-            plt.title("Mask (IoU: {0:.4f})".format(best_iou))
+            plt.title("Mask (IoU: {0:.4f})".format(iou))
             plt.imshow(predicted_mask)
 
             plt.show()
+            i = i+1
 
-
-
-    print("IOUs for segmentation algorithms (by class): {}".format(mean_seg_ious/len(train_dataset)))
+    print("IOUs for segmentation algorithms (by class): {}".format(sum_seg_ious/n_seg_chosen))
 
     action = "training classifier"
     start_time = segutils.start_action(action)
-    model = segml.train_seg_classifier(train_dataset, best_seg_cls)
+    model = segml.train_seg_classifier(train_dataset, best_segs)
     segutils.complete_action(action, start_time)
 
     if evaluate:
