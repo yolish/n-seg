@@ -1,0 +1,8 @@
+{ "paths":{"input_path":"/home/yoli/Data/n-seg",
+             "output_path":"/home/yoli/PycharmProjects/n-seg/predictions/"
+    },
+   "actions":{"evaluate":false,
+              "test":false,
+              "visualize":true
+             }
+}
