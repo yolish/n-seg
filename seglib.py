@@ -9,6 +9,7 @@ from skimage.segmentation import quickshift, felzenszwalb, slic
 import random
 from skimage.color import rgb2lab, rgb2grey
 from skimage import filter
+from scipy import ndimage as ndi
 import cv2
 
 
@@ -53,5 +54,11 @@ def seg2(img):
     # connected components
     #img = mark_boundaries(img,cv2.connectedComponents(bin_open)[1], color=(1,0,0))
 
+def seg3(img):
+    grey_img = rgb2grey(img)
+    edges = filter.prewitt(grey_img)
+    mask = label(ndi.binary_fill_holes(edges))
+    return mask
 
-SEG_ALGS = {0:seg1, 1:seg2}
+
+SEG_ALGS = {0:seg1, 1:seg2, 2:seg3}
