@@ -59,8 +59,9 @@ def calc_expected_iou(labelled_mask):
 
 #region learning and testing
 def assign_best_seg(train_dataset, seg_map):
-
-    for sample in train_dataset:
+    best_seg_cls = {}
+    for i in xrange(len(train_dataset)):
+        sample = train_dataset[i]
         img_id = sample.get('id')
         img = sample.get('img')
         seg_ious = np.zeros(len(seg_map))
@@ -70,12 +71,14 @@ def assign_best_seg(train_dataset, seg_map):
             true_rles = get_rles_from_df(train_dataset.dataset, img_id)
             avg_precision_iou = calc_avg_precision_iou(pred_rles, true_rles)
             seg_ious[cls] = avg_precision_iou
-        sample['seg_ious'] = seg_ious
-        sample['best_seg_cls'] = np.argmax(seg_ious)
+        best_seg_cls[img_id] = seg_ious
+
+    return best_seg_cls
 
 
 
-def train_seg_classifier(train_dataset):
+
+def train_seg_classifier(train_dataset, best_seg_cls):
     model = None
     return model
 

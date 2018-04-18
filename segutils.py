@@ -38,8 +38,8 @@ def collect_dataset(imgs_df, dataset_type, labels_file = None):
     group_cols = ['ImageId']
 
     for n_group, n_rows in dataset_details.groupby(group_cols):
-        img_record = {col_name: col_value for col_name, col_value in zip(group_cols, n_group)}
-
+        img_record = {}
+        img_record['ImageId'] = n_rows['ImageId'].unique()[0]
         img_paths = n_rows.query('ImageType == "images"')['path'].values.tolist()
         assert(len(img_paths) == 1)
         img_record['ImagePath'] = n_rows.query('ImageType == "images"')['path'].values.tolist()[0]
