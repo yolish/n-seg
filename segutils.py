@@ -72,14 +72,14 @@ def plot_sample_segmentation(sample, seg_cls, seg_map, iou=None):
         plt.title("Mask (IoU: {0:.4f})".format(iou))
     else:
         plt.title("Mask")
+    plt.imshow(predicted_mask)
 
     if labels is not None:
         plt.subplot(plt_codes[2])
         plt.title("Labels")
         plt.imshow(labels)
-
-    plt.imshow(predicted_mask)
     plt.show()
+
 def plot_predicted_masks(examples, fig_size, plot_true_mask=True):
     n_cols = 3
     total_n_imgs = len(examples)
