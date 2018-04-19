@@ -23,7 +23,7 @@ if __name__ == "__main__":
     output_path = paths_config.get("output_path")
 
     actions_config = config.get("actions")
-    explore = config.get("explore")
+    explore = actions_config.get("explore")
     evaluate = actions_config.get("evaluate")
     test = actions_config.get("test")
     visualize = actions_config.get("visualize")
