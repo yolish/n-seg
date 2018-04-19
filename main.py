@@ -23,6 +23,7 @@ if __name__ == "__main__":
     output_path = paths_config.get("output_path")
 
     actions_config = config.get("actions")
+    explore = config.get("explore")
     evaluate = actions_config.get("evaluate")
     test = actions_config.get("test")
     visualize = actions_config.get("visualize")
@@ -32,20 +33,20 @@ if __name__ == "__main__":
     imgs_details = segutils.collect_imgs_details(data_path)
     segutils.complete_action(action, start_time)
 
-    action = "creating datasets"
+    action = "creating train dataset"
     start_time = segutils.start_action(action)
     train_labels_file = os.path.join(data_path, 'train_labels.csv')
     train_dataset = NucleiDataset('train', imgs_df=imgs_details,
                                   labels_file=train_labels_file)
-    validation_labels_file = os.path.join(data_path, 'validation_labels.csv')
-    validation_dataset = NucleiDataset('validation', imgs_df=imgs_details,
-                                       labels_file=validation_labels_file)
-    test_dataset = NucleiDataset('test', imgs_df=imgs_details)
-
-    print("train set size: {}, validation set size: {} test set size:{}".format(len(train_dataset),
-                                                        len(validation_dataset), len(test_dataset)))
-
+    print("set size: {}".format(len(train_dataset)))
     segutils.complete_action(action, start_time)
+
+    if explore:
+        for i in xrange(5):
+            sample = train_dataset[i]
+            for cls in len(SEG_ALGS):
+                segutils.plot_sample_segmentation(sample, cls, SEG_ALGS)
+        sys.exit(0)
 
     action = "assigning best segmentation class"
     start_time = segutils.start_action(action)
@@ -66,32 +67,26 @@ if __name__ == "__main__":
 
         if visualize and i < n_imgs_to_plot:
             sample = train_dataset[i]
-            img = sample.get('img')
-            mask = sample.get('labelled_mask')
-            predicted_mask = SEG_ALGS.get(cls)(img)
-            plt.subplot(131)
-            plt.title("Image")
-            plt.imshow(img)
-
-            plt.subplot(132)
-            plt.title("Labels")
-            plt.imshow(mask)
-
-            plt.subplot(133)
-            plt.title("Mask (IoU: {0:.4f})".format(iou))
-            plt.imshow(predicted_mask)
-
-            plt.show()
-            i = i+1
+            segutils.plot_sample_segmentation(sample, cls, SEG_ALGS, iou)
+        i = i+1
 
     print("IOUs for segmentation algorithms (by class): {}".format(sum_seg_ious/n_seg_chosen))
-
+    print("mean IoU for train set: {}".format(sum_seg_ious.sum()/(i-1)))
     action = "training classifier"
     start_time = segutils.start_action(action)
     model = segml.train_seg_classifier(train_dataset, best_segs)
     segutils.complete_action(action, start_time)
 
     if evaluate:
+        action = "creating validation  dataset"
+        start_time = segutils.start_action(action)
+        validation_labels_file = os.path.join(data_path, 'validation_labels.csv')
+        validation_dataset = NucleiDataset('validation', imgs_df=imgs_details,
+                                           labels_file=validation_labels_file)
+        print("set size: {}".format(len(validation_dataset)))
+        segutils.complete_action(action, start_time)
+
+
         action = "making predictions for the validation set"
         start_time = segutils.start_action(action)
         predictions, examples = segml.test(model, validation_dataset, SEG_ALGS)
@@ -107,6 +102,9 @@ if __name__ == "__main__":
             segutils.plot_predicted_masks(examples, (22, 27))
 
     if test:
+
+        test_dataset = NucleiDataset('test', imgs_df=imgs_details)
+
         action = "making predictions for the test set"
         start_time = segutils.start_action(action)
         predictions, examples = segml.test(model, test_dataset, SEG_ALGS)
