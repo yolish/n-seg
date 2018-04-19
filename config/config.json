@@ -3,6 +3,7 @@
     },
    "actions":{"evaluate":false,
               "test":false,
-              "visualize":true
+              "visualize":true,
+              "explore":true
              }
 }

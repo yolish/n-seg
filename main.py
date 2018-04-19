@@ -44,7 +44,7 @@ if __name__ == "__main__":
     if explore:
         for i in xrange(5):
             sample = train_dataset[i]
-            for cls in len(SEG_ALGS):
+            for cls in xrange(len(SEG_ALGS)):
                 segutils.plot_sample_segmentation(sample, cls, SEG_ALGS)
         sys.exit(0)
 
