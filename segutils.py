@@ -52,7 +52,34 @@ def collect_dataset(imgs_df, dataset_type, labels_file = None):
 # endregion
 
 
+
 #region visualization
+def plot_sample_segmentation(sample, seg_cls, seg_map, iou=None):
+    img = sample.get('img')
+    labels = sample.get('labelled_mask')
+    predicted_mask = seg_map.get(seg_cls)(img)
+
+    plt_codes = [121, 122]
+    if labels is not None:
+        plt_codes = [131, 132, 133]
+
+    plt.subplot(plt_codes[0])
+    plt.title("Image")
+    plt.imshow(img)
+
+    plt.subplot(plt_codes[1])
+    if iou is not None:
+        plt.title("Mask (IoU: {0:.4f})".format(iou))
+    else:
+        plt.title("Mask")
+
+    if labels is not None:
+        plt.subplot(plt_codes[2])
+        plt.title("Labels")
+        plt.imshow(labels)
+
+    plt.imshow(predicted_mask)
+    plt.show()
 def plot_predicted_masks(examples, fig_size, plot_true_mask=True):
     n_cols = 3
     total_n_imgs = len(examples)
