@@ -8,7 +8,7 @@ from seglib import SEG_ALGS
 import segml
 import segutils
 import numpy as np
-import matplotlib.pyplot as plt
+import pandas as pd
 
 if __name__ == "__main__":
 
@@ -24,6 +24,7 @@ if __name__ == "__main__":
 
     actions_config = config.get("actions")
     explore = actions_config.get("explore")
+    preprocess = actions_config.get("preprocess")
     evaluate = actions_config.get("evaluate")
     test = actions_config.get("test")
     visualize = actions_config.get("visualize")
@@ -48,30 +49,40 @@ if __name__ == "__main__":
                 segutils.plot_sample_segmentation(sample, cls, SEG_ALGS)
         sys.exit(0)
 
-    action = "assigning best segmentation class"
-    start_time = segutils.start_action(action)
-    best_segs = segml.assign_best_seg(train_dataset, SEG_ALGS)
-    segutils.complete_action(action, start_time)
+    labels = {"ImageId":[], "Class":[], "Name":[], "IoU":[]}
+    if preprocess:
+        action = "assigning best segmentation class"
+        start_time = segutils.start_action(action)
+        best_segs = segml.assign_best_seg(train_dataset, SEG_ALGS)
+        segutils.complete_action(action, start_time)
 
+        n_imgs_to_plot = 5
+        i = 0
+        n_seg_candidates = len(SEG_ALGS)
+        sum_seg_ious = np.zeros(n_seg_candidates)
+        n_seg_chosen = np.zeros(n_seg_candidates)
+        for img_id, best_seg in best_segs.items():
+            cls = best_seg.get('cls')
+            iou = best_seg.get('iou')
+            sum_seg_ious[cls] = sum_seg_ious[cls] + iou
+            n_seg_chosen[cls] = n_seg_chosen[cls] + 1
+            labels.get('ImageId').append(img_id)
+            labels.get('Class').append(cls)
+            labels.get('Name').append(str(SEG_ALGS.get(cls)))
+            labels.get('IoU').append(iou)
+            if visualize and i < n_imgs_to_plot:
+                sample = train_dataset[i]
+                segutils.plot_sample_segmentation(sample, cls, SEG_ALGS, iou)
+            i = i+1
 
-    n_imgs_to_plot = 5
-    i = 0
-    n_seg_candidates = len(SEG_ALGS)
-    sum_seg_ious = np.zeros(n_seg_candidates)
-    n_seg_chosen = np.zeros(n_seg_candidates)
-    for img_id, best_seg in best_segs.items():
-        cls = best_seg.get('cls')
-        iou = best_seg.get('iou')
-        sum_seg_ious[cls] = sum_seg_ious[cls] + iou
-        n_seg_chosen[cls] = n_seg_chosen[cls] + 1
+        print("IOUs for segmentation algorithms (by class): {}".format(sum_seg_ious/n_seg_chosen))
+        print("mean IoU for train set: {}".format(sum_seg_ious.sum()/(i-1)))
+        labels = pd.DataFrame.from_dict(labels)
+        labels.to_csv(output_path+"train_seg_assignment_"+timestamp+".csv", index=False)
+    else:
+        seg_cls_labels_file = paths_config.get("seg_cls_labels_file")
+        labels = pd.DataFrame.from_csv(seg_cls_labels_file)
 
-        if visualize and i < n_imgs_to_plot:
-            sample = train_dataset[i]
-            segutils.plot_sample_segmentation(sample, cls, SEG_ALGS, iou)
-        i = i+1
-
-    print("IOUs for segmentation algorithms (by class): {}".format(sum_seg_ious/n_seg_chosen))
-    print("mean IoU for train set: {}".format(sum_seg_ious.sum()/(i-1)))
     action = "training classifier"
     start_time = segutils.start_action(action)
     model = segml.train_seg_classifier(train_dataset, best_segs)
